@@ -11,7 +11,9 @@ Parameters:
 # Enable blue/green deployments using this Globals section. For instructions, see the AWS CodeStar User Guide:
 # https://docs.aws.amazon.com/codestar/latest/userguide/how-to-modify-serverless-project.html?icmpid=docs_acs_rm_tr
 #
-# Globals:
+Globals:
+  Api:
+    EndpointConfiguration: REGIONAL
 #   Function:
 #     AutoPublishAlias: live
 #     DeploymentPreference:
@@ -33,3 +35,86 @@ Resources:
           Properties:
             Path: /
             Method: get
+
+  DomainNameARecord:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      HostedZoneId: Z13IPFREYQK3FP
+      Name: hellocodestar.octomonkey.cloud.
+      Type: A
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: true
+        DNSName: !GetAtt "CloudFront.DomainName"
+
+  DomainNameAAAARecord:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      HostedZoneId: Z13IPFREYQK3FP
+      Name: hellocodestar.octomonkey.cloud.
+      Type: AAAA
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        EvaluateTargetHealth: true
+        DNSName: !GetAtt "CloudFront.DomainName"
+
+  CloudFront:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - hellocodestar.octomonkey.cloud
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - DELETE
+            - GET
+            - HEAD
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          CachedMethods:
+            - HEAD
+            - GET
+          Compress: false
+          DefaultTTL: 3600
+          ForwardedValues:
+            Headers:
+              - Authorization
+            QueryString: true
+            QueryStringCacheKeys:
+              - q
+          MinTTL: 60
+          TargetOriginId: Gateway
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        IPV6Enabled: true
+        Logging:
+          Bucket: octomonkey-logs-virginia.s3.amazonaws.com
+          Prefix: !Join
+            - '/'
+            - - HelloCodeStarGo
+              - !GetAtt ServerlessRestApi.Stage
+        Origins:
+          - Id: Gateway
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+            DomainName: !Join 
+              - ''
+              - - !Ref ServerlessRestApi
+                - .execute-api.us-east-1.amazonaws.com
+            OriginPath: !Join
+              - '/'
+              - -  !GetAtt ServerlessRestApi.Stage
+        PriceClass: PriceClass_100
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: none
+        ViewerCertificate:
+          AcmCertificateArn: >-
+            arn:aws:acm:us-east-1:122710858537:certificate/fd9325ca-f051-448f-bb00-10bcfc3804e0
+          SslSupportMethod: sni-only
+      Tags:
+        - Key: Application
+          Value: HelloCodeStarGo
