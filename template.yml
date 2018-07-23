@@ -106,7 +106,8 @@ Resources:
                 - .execute-api.us-east-1.amazonaws.com
             OriginPath: !Join
               - '/'
-              - -  !Ref ServerlessRestApi.Stage
+              - - ""
+                - !Ref ServerlessRestApi.Stage
         PriceClass: PriceClass_100
         Restrictions:
           GeoRestriction:
